@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const mongoose = require("mongoose");
+
 const userRoutes = require("./routes/userRoutes");
 const farmRoutes = require("./routes/farmRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
@@ -9,26 +11,14 @@ const statsRoutes = require("./routes/stats/statsRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const calculateCarbonYield = require("./utils/calculateCarbonYield");
 const scheduleTasks = require("./utils/scheduleTasks");
-const mongoose = require("mongoose");
 
 dotenv.config();
 
 const app = express();
 
-mongoose
-  .connect(
-    "mongodb+srv://tolujohnofficial:0O6OhRiBgMDHOsDM@cluster0.rxkcsyh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-    {
-      useUnifiedTopology: true,
-      useNewUrlParser: true,
-    }
-  )
-  .then(() => {
-    console.log("Connected to MongoDB");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => console.log("MongoDB connection error:", err));
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(
   cors({
     origin: ["http://localhost:3000", "https://earthrectify.vercel.app"],
@@ -40,6 +30,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/farms", farmRoutes);
 app.use("/api/transactions", transactionRoutes);
@@ -51,11 +42,24 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+// Error handling
 app.use(notFound);
 app.use(errorHandler);
 
+// Scheduled tasks
 scheduleTasks();
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, console.log(`Server running on port ${PORT}`));
+// MongoDB connection and server start
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+  })
+  .then(() => {
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1); // Exit if DB connection fails
+  });
