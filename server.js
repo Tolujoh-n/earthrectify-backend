@@ -23,8 +23,11 @@ mongoose
       useNewUrlParser: true,
     }
   )
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.log(err));
+  .then(() => {
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  })
+  .catch((err) => console.log("MongoDB connection error:", err));
 
 app.use(
   cors({
